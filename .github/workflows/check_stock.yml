@@ -1,0 +1,30 @@
+name: Verificare Stoc Tuburi Rollo
+
+on:
+  schedule:
+    # Rulează de 4 ori pe zi (orele sunt în UTC: 06:00, 12:00, 18:00, 00:00 UTC -> 08:00, 14:00, 20:00, 02:00 ora României)
+    - cron: '0 6,12,18,0 * * *'
+  workflow_dispatch: # Permite rularea manuală din interfața GitHub
+
+jobs:
+  check-availability:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descarcă codul din repository
+        uses: actions/checkout@v4
+
+      - name: Configurează Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalează dependințele
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Rulează scriptul de verificare
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: python check_stock.py

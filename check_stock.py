@@ -1,0 +1,65 @@
+import os
+import requests
+from bs4 import BeautifulSoup
+
+# URL-ul produsului din captura de ecran
+URL = "https://tuburiaparate.ro/tuburi-tigari-rollo-micro-slim-blue"
+
+# Topic-ul tău unic de pe ntfy.sh (preluat din GitHub Secrets pentru siguranță)
+NTFY_TOPIC = os.environ.get("NTFY_TOPIC")
+
+def send_notification(message):
+    if not NTFY_TOPIC:
+        print("Eroare: NTFY_TOPIC nu este setat.")
+        return
+
+    requests.post(
+        f"https://ntfy.sh/{NTFY_TOPIC}",
+        data=message.encode("utf-8"),
+        headers={
+            "Title": "Stoc Disponibil: Tuburi Rollo!",
+            "Priority": "high",
+            "Tags": "tada,shopping_cart",
+            "Click": URL  # Deschide direct pagina produsului când apeși pe notificare
+        }
+    )
+
+def check_stock():
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Accept-Language": "ro-RO,ro;q=0.9,en-US;q=0.8,en;q=0.7"
+    }
+
+    try:
+        response = requests.get(URL, headers=headers, timeout=15)
+        response.raise_for_status()
+    except requests.RequestException as e:
+        print(f"Eroare la accesarea paginii: {e}")
+        return
+
+    soup = BeautifulSoup(response.text, "html.parser")
+    page_text = soup.get_text(separator=" ", strip=True).lower()
+
+    # Verificăm dacă pagina s-a încărcat corect (căutăm numele produsului)
+    if "rollo micro slim blue" not in page_text:
+        print("Atenție: Conținutul paginii nu pare cel așteptat (posibil blocaj/captcha).")
+        return
+
+    # Verificăm indicatorii de lipsă stoc vizibili în pagină
+    out_of_stock_indicators = [
+        "stoc indisponibil",
+        "stoc disponibil: 0"
+    ]
+
+    is_out_of_stock = any(indicator in page_text for indicator in out_of_stock_indicators)
+
+    if not is_out_of_stock:
+        print("PRODUSUL ESTE ÎN STOC! Trimit notificare...")
+        send_notification(
+            "Tuburi Tigari Rollo Micro Slim Blue 200 au revenit în stoc pe tuburiaparate.ro! Apasă aici pentru a comanda."
+        )
+    else:
+        print("Produsul este încă indisponibil.")
+
+if __name__ == "__main__":
+    check_stock()
