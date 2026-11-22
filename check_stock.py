@@ -4,7 +4,8 @@ from bs4 import BeautifulSoup
 
 # URL-ul produsului din captura de ecran
 URL = "https://tuburiaparate.ro/tuburi-tigari-rollo-micro-slim-blue"
-
+# Citim variabila de test (implicit False)
+FORCE_AVAILABLE = os.environ.get("FORCE_AVAILABLE", "false").lower() == "true"
 # Topic-ul tău unic de pe ntfy.sh (preluat din GitHub Secrets pentru siguranță)
 NTFY_TOPIC = os.environ.get("NTFY_TOPIC")
 
